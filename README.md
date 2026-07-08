@@ -1,36 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RepoLens
 
-## Getting Started
+Turn any public GitHub profile into a portfolio-ready breakdown : architecture, key skills, and tech stack, generated automatically for every public project.
 
-First, run the development server:
+Paste a GitHub username or profile link, browse someone's public repos in a clean card view, and click **Analyze** on any project to get an AI-generated summary written the way a recruiter would want to read it: what the project does, the key skills it demonstrates, notable engineering decisions, and a full language breakdown.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+-  __Browse any public GitHub profile__ : paste a username or full profile URL
+-  **Filter and sort** repos by language, last updated, or hide forks
+-  **AI-generated project summaries** : recruiter-facing, factual, no hype
+-  **Key modules breakdown** : a plain-English rundown of a project's main pieces
+-  **Notable engineering decisions** : callouts on interesting technical choices
+-  **Language distribution charts** : both per-project and across an entire profile
+-  **Light and dark themes** : persists across sessions, respects system preference
+-  **Fully responsive** : works cleanly on mobile, tablet, and desktop
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Framework:** Next.js (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Theming:** next-themes
+- **AI:** Google Gemini API (`gemini-2.5-flash`)
+- **Data source:** GitHub REST API
+- **Icons:** Lucide
