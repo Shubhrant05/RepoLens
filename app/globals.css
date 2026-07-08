@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #FFFFFF;
+  --bg-elevated: #F6F8FA;
+  --text-primary: #1F2328;
+  --text-secondary: #59636E;
+  --border: #D1D9E0;
+  --accent: #1F883D;
+  --accent-contrast: #FFFFFF;
+  --teal: #0969DA;
+  --danger: #D1242F;
+  --success: #1F883D;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --bg: #0D1117;
+  --bg-elevated: #161B22;
+  --text-primary: #E6EDF3;
+  --text-secondary: #8D96A0;
+  --border: #30363D;
+  --accent: #2EA043;
+  --accent-contrast: #FFFFFF;
+  --teal: #4493F8;
+  --danger: #F85149;
+  --success: #2EA043;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.font-display {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes loading-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+.mt-2.overflow-x-auto svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
