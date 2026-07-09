@@ -129,7 +129,6 @@ export function ExploreContent() {
               {username}'s repositories
             </h1>
           </div>
-          <ThemeToggle />
         </header>
 
         {analyzeError && (
