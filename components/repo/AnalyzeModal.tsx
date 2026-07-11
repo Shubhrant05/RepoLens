@@ -1,17 +1,35 @@
 "use client";
 import { Badge } from "@/components/ui/Badge";
-import { LanguageChart } from "../../components/repo/LanguageChart";
-import { AnalyzeResult } from "../types/repo";
+import { LanguageChart } from "@/components/repo/LanguageChart";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { RepoMetadata, AIAnalysis } from "../types/repo";
 import { getProjectScale, getRelativeTime, formatRepoSize } from "../lib/utils";
 import { X } from "lucide-react";
 import { useEffect } from "react";
-
+import { Button } from "../ui/Button";
 interface AnalyzeModalProps {
-  result: AnalyzeResult;
+  owner: string;
+  repo: string;
+  metadata: RepoMetadata | null;
+  metadataError: string | null;
+  aiAnalysis: AIAnalysis | null;
+  aiError: string | null;
+  isGeneratingAI: boolean;
+  onGenerateAI: () => void;
   onClose: () => void;
 }
 
-export function AnalyzeModal({ result, onClose }: AnalyzeModalProps) {
+export function AnalyzeModal({
+  owner,
+  repo,
+  metadata,
+  metadataError,
+  aiAnalysis,
+  aiError,
+  isGeneratingAI,
+  onGenerateAI,
+  onClose,
+}: AnalyzeModalProps) {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -45,7 +63,7 @@ export function AnalyzeModal({ result, onClose }: AnalyzeModalProps) {
             id="analyze-title"
             className="font-display text-xl font-semibold text-[var(--text-primary)]"
           >
-            {result.owner}/{result.repo}
+            {owner}/{repo}
           </h2>
           <button
             onClick={onClose}
@@ -56,53 +74,95 @@ export function AnalyzeModal({ result, onClose }: AnalyzeModalProps) {
           </button>
         </div>
 
-        <p className="mt-4 text-sm leading-relaxed text-[var(--text-secondary)]">
-          {result.summary}
-        </p>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {result.keySkillsDemonstrated.map((skill) => (
-            <Badge key={skill} tone="teal">
-              {skill}
-            </Badge>
-          ))}
+        {/* AI summary + skills — skeleton until aiAnalysis resolves */}
+        <div className="mt-4">
+          {aiError ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[var(--danger)]">{aiError}</p>
+              <Button
+                variant="secondary"
+                onClick={onGenerateAI}
+                isLoading={isGeneratingAI}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : aiAnalysis ? (
+            <>
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                {aiAnalysis.summary}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {aiAnalysis.keySkillsDemonstrated.map((skill) => (
+                  <Badge key={skill} tone="teal">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-[var(--border)] p-4">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Generate an AI-written summary, key skills, and notable
+                engineering decisions for this project.
+              </p>
+              <Button onClick={onGenerateAI} isLoading={isGeneratingAI}>
+                {isGeneratingAI ? "Generating..." : "Generate AI Summary"}
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* metrics row */}
+        {/* metrics row — unchanged, still auto-loads via metadata */}
         <div className="mt-6 grid grid-cols-2 gap-3 border-y border-[var(--border)] py-4 sm:grid-cols-4">
-          <Metric
-            label="Scale"
-            value={getProjectScale(result.totalFileCount)}
-          />
-          <Metric
-            label="Last active"
-            value={getRelativeTime(result.lastPush)}
-          />
-          <Metric label="Size" value={formatRepoSize(result.repoSizeKb)} />
-          <Metric
-            label="Docs"
-            value={result.hasReadme ? "README present" : "No README"}
-          />
+          {metadataError ? (
+            <p className="col-span-full text-sm text-[var(--danger)]">
+              {metadataError}
+            </p>
+          ) : metadata ? (
+            <>
+              <Metric
+                label="Scale"
+                value={getProjectScale(metadata.totalFileCount)}
+              />
+              <Metric
+                label="Last active"
+                value={getRelativeTime(metadata.lastPush)}
+              />
+              <Metric
+                label="Size"
+                value={formatRepoSize(metadata.repoSizeKb)}
+              />
+              <Metric
+                label="Docs"
+                value={metadata.hasReadme ? "README present" : "No README"}
+              />
+            </>
+          ) : (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))
+          )}
         </div>
 
-        {/* language breakdown */}
-        <div className="mt-6">
-          <h3 className="font-display text-sm font-medium text-[var(--text-primary)]">
-            Languages
-          </h3>
-          <div className="mt-3">
-            <LanguageChart languageBreakdown={result.languageBreakdown} />
+        {metadata && (
+          <div className="mt-6">
+            <h3 className="font-display text-sm font-medium text-[var(--text-primary)]">
+              Languages
+            </h3>
+            <div className="mt-3">
+              <LanguageChart languageBreakdown={metadata.languageBreakdown} />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* key modules */}
-        {result.keyModules?.length > 0 && (
+        {(aiAnalysis?.keyModules?.length ?? 0) > 0 && (
           <div className="mt-6">
             <h3 className="font-display text-sm font-medium text-[var(--text-primary)]">
               Key modules
             </h3>
             <ul className="mt-3 space-y-2.5">
-              {result.keyModules.map((mod) => (
+              {aiAnalysis!.keyModules.map((mod) => (
                 <li
                   key={mod.name}
                   className="rounded-lg border border-[var(--border)] p-3"
@@ -119,14 +179,13 @@ export function AnalyzeModal({ result, onClose }: AnalyzeModalProps) {
           </div>
         )}
 
-        {/* notable decisions */}
-        {result.notableDecisions?.length > 0 && (
+        {(aiAnalysis?.notableDecisions?.length ?? 0) > 0 && (
           <div className="mt-6">
             <h3 className="font-display text-sm font-medium text-[var(--text-primary)]">
               Notable decisions
             </h3>
             <ul className="mt-3 space-y-2">
-              {result.notableDecisions.map((point, i) => (
+              {aiAnalysis!.notableDecisions.map((point, i) => (
                 <li
                   key={i}
                   className="flex gap-2 text-sm text-[var(--text-secondary)]"

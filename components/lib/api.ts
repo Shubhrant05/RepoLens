@@ -41,8 +41,15 @@ export function fetchUserRepos(userLink: string) {
   });
 }
 
+export function fetchRepoMetadata(owner: string, repo: string) {
+  return apiFetch<import("../types/repo").RepoMetadata>("/api/repo-metadata", {
+    method: "POST",
+    body: JSON.stringify({ owner, repo }),
+  });
+}
+
 export function analyzeRepo(owner: string, repo: string) {
-  return apiFetch<import("../../components/types/repo").AnalyzeResult>("/api/analyze", {
+  return apiFetch<import("../types/repo").AIAnalysis>("/api/analyze", {
     method: "POST",
     body: JSON.stringify({ owner, repo }),
   });

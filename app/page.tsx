@@ -52,7 +52,7 @@ export default function LandingPage() {
             <div className="flex-1">
               <Input
                 name="user"
-                placeholder="github.com/username or just username"
+                placeholder="https://github.com/username or just username"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 error={error}

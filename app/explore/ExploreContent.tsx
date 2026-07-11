@@ -3,11 +3,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   fetchUserRepos,
+  fetchRepoMetadata,
   analyzeRepo,
   ApiError,
 } from "../../components/lib/api";
 import { extractUsername } from "../../components/lib/utils";
-import { Repo, AnalyzeResult, SortOption } from "../../components/types/repo";
+import {
+  Repo,
+  RepoMetadata,
+  AIAnalysis,
+  SortOption,
+} from "../../components/types/repo";
 import { RepoCard } from "../../components/repo/RepoCard";
 import { RepoFilters } from "../../components/repo/RepoFilters";
 import { AnalyzeModal } from "../../components/repo/AnalyzeModal";
@@ -15,13 +21,11 @@ import { ProfileOverview } from "../../components/repo/ProfileOverview";
 import { RepoCardSkeleton } from "../../components/ui/Skeleton";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorBanner } from "../../components/ui/ErrorBanner";
-import { ThemeToggle } from "../../components/ui/ThemeToggle";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
 export function ExploreContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const rawInput = searchParams.get("user") ?? "";
   const username = extractUsername(rawInput) ?? rawInput;
 
@@ -33,15 +37,23 @@ export function ExploreContent() {
   const [sortBy, setSortBy] = useState<SortOption>("updated");
   const [hideForks, setHideForks] = useState(true);
 
-  const [analyzingId, setAnalyzingId] = useState<number | null>(null);
-  const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(
-    null,
-  );
-  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  // modal state — split into two independent pieces, one per data source
+  const [modalRepo, setModalRepo] = useState<{
+    owner: string;
+    repo: string;
+  } | null>(null);
+
+  const [metadata, setMetadata] = useState<RepoMetadata | null>(null);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   useEffect(() => {
     if (!username) return;
-    let cancelled = false; // prevents state updates from a stale request (race condition guard)
+    let cancelled = false;
 
     async function load() {
       setIsLoading(true);
@@ -91,21 +103,51 @@ export function ExploreContent() {
     return result;
   }, [repos, hideForks, selectedLanguage, sortBy]);
 
-  async function handleAnalyze(repo: Repo) {
-    setAnalyzingId(repo.id);
-    setAnalyzeError(null);
-    try {
-      const result = await analyzeRepo(repo.ownerLogin, repo.name);
-      setAnalyzeResult(result);
-    } catch (err) {
-      setAnalyzeError(
-        err instanceof ApiError
-          ? err.message
-          : "Couldn't analyze this project.",
-      );
-    } finally {
-      setAnalyzingId(null);
-    }
+  function handleAnalyze(repo: Repo) {
+    setModalRepo({ owner: repo.ownerLogin, repo: repo.name });
+
+    setMetadata(null);
+    setMetadataError(null);
+    setAiAnalysis(null);
+    setAiError(null);
+    setIsLoadingMetadata(true);
+
+    fetchRepoMetadata(repo.ownerLogin, repo.name)
+      .then(setMetadata)
+      .catch((err) =>
+        setMetadataError(
+          err instanceof ApiError ? err.message : "Couldn't load repo details.",
+        ),
+      )
+      .finally(() => setIsLoadingMetadata(false));
+
+    // no more automatic analyzeRepo call here — that now only fires on demand
+  }
+
+  function handleGenerateAI() {
+    if (!modalRepo) return;
+
+    setIsGeneratingAI(true);
+    setAiError(null);
+
+    analyzeRepo(modalRepo.owner, modalRepo.repo)
+      .then(setAiAnalysis)
+      .catch((err) =>
+        setAiError(
+          err instanceof ApiError
+            ? err.message
+            : "Couldn't generate AI summary.",
+        ),
+      )
+      .finally(() => setIsGeneratingAI(false));
+  }
+
+  function handleCloseModal() {
+    setModalRepo(null);
+    setMetadata(null);
+    setMetadataError(null);
+    setAiAnalysis(null);
+    setAiError(null);
   }
 
   if (!username) {
@@ -131,15 +173,6 @@ export function ExploreContent() {
           </div>
         </header>
 
-        {analyzeError && (
-          <div className="mb-6">
-            <ErrorBanner
-              message={analyzeError}
-              onRetry={() => setAnalyzeError(null)}
-            />
-          </div>
-        )}
-
         {isLoading && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -164,9 +197,8 @@ export function ExploreContent() {
 
         {!isLoading && !loadError && repos.length > 0 && (
           <>
-            {!isLoading && !loadError && repos.length > 0 && (
-              <ProfileOverview repos={repos} />
-            )}
+            <ProfileOverview repos={repos} />
+
             <div className="mb-6">
               <RepoFilters
                 languages={languages}
@@ -191,7 +223,7 @@ export function ExploreContent() {
                     key={repo.id}
                     repo={repo}
                     onAnalyze={handleAnalyze}
-                    isAnalyzing={analyzingId === repo.id}
+                    isAnalyzing={false}
                   />
                 ))}
               </div>
@@ -199,10 +231,17 @@ export function ExploreContent() {
           </>
         )}
 
-        {analyzeResult && (
+        {modalRepo && (
           <AnalyzeModal
-            result={analyzeResult}
-            onClose={() => setAnalyzeResult(null)}
+            owner={modalRepo.owner}
+            repo={modalRepo.repo}
+            metadata={metadata}
+            metadataError={metadataError}
+            aiAnalysis={aiAnalysis}
+            aiError={aiError}
+            isGeneratingAI={isGeneratingAI}
+            onGenerateAI={handleGenerateAI}
+            onClose={handleCloseModal}
           />
         )}
       </main>

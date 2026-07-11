@@ -17,18 +17,23 @@ export interface KeyModule {
   description: string;
 }
 
-export interface AnalyzeResult {
+export interface RepoMetadata {
   owner: string;
   repo: string;
   languageBreakdown: Record<string, number>;
-  summary: string;
-  keySkillsDemonstrated: string[];
-  keyModules: KeyModule[];
-  notableDecisions: string[];
   totalFileCount: number;
   lastPush: string;
   repoSizeKb: number;
   hasReadme: boolean;
+}
+
+export interface AIAnalysis {
+  owner: string;
+  repo: string;
+  summary: string;
+  keySkillsDemonstrated: string[];
+  keyModules: KeyModule[];
+  notableDecisions: string[];
 }
 
 export type SortOption = "updated" | "name" | "language";
